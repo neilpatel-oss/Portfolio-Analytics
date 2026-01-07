@@ -1,6 +1,6 @@
-# Real-Time-Stock-Analysis
+# Portfolio-Analytics
 
-A real-time stock prediction system that loads data from stock exchange APIs, stores it in Azure Data Warehouse, forecasts returns using Gradient Boosting models, and displays results through a React.js dashboard.
+A stock prediction system that loads data from stock exchange APIs, stores it in Azure Data Warehouse, forecasts returns using Gradient Boosting models, and displays results through a React.js dashboard.
 
 ## Steps
 
