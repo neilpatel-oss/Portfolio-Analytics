@@ -70,3 +70,7 @@ figures/
 *.png
 *.jpg
 *.pdf
+
+# Cached results
+cached_results.json
+*.json.cache
