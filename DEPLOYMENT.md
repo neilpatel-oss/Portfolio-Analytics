@@ -2,6 +2,8 @@
 
 This guide walks you through deploying the Stock Analysis Platform to Vercel with GitHub Actions for daily model updates.
 
+**Before you redeploy:** complete [Step 2 (GitHub Secrets)](#step-2-github-secrets-do-this-before-first-deploy) and, if you want a fixed-time daily run, [Step 4 Option B (external cron)](#option-b-external-cron-site-eg-cron-joborg). Then push and redeploy.
+
 ## Architecture Overview
 
 - **GitHub Actions**: Runs model daily (cron) and saves results to `public/cached_results.json`
@@ -41,65 +43,105 @@ After deployment, go to **Project Settings** → **General**:
 
 ---
 
-## Step 2: Setup GitHub Actions Workflow
+## Step 2: GitHub Secrets (do this before first deploy)
 
-### 2.1 Add FRED API Key to GitHub Secrets
-The model needs a FRED API key (get one at [fred.stlouisfed.org](https://fred.stlouisfed.org/docs/api/api_key.html)). `config.py` is not in the repo, so GitHub Actions uses a secret:
+The workflow needs a FRED API key. Add it as a repository secret so Actions can run the model.
 
-1. Go to your GitHub repo: `https://github.com/skp1008/Portfolio-Analytics`
-2. Click **Settings** → **Secrets and variables** → **Actions**
+### 2.1 Get a FRED API key (if you don’t have one)
+1. Go to [fred.stlouisfed.org/docs/api/api_key.html](https://fred.stlouisfed.org/docs/api/api_key.html)
+2. Sign in or create an account
+3. Request an API key and copy it
+
+### 2.2 Add the secret in GitHub
+1. Open your repo on GitHub (e.g. `https://github.com/skp1008/Portfolio-Analytics`)
+2. Go to **Settings** → **Secrets and variables** → **Actions**
 3. Click **"New repository secret"**
-4. Name: `FRED_API_KEY`
-5. Value: Your FRED API key
+4. **Name:** `FRED_API_KEY` (exactly this)
+5. **Value:** paste your FRED API key
 6. Click **"Add secret"**
 
-### 2.2 Enable GitHub Actions
-The workflow file is already created at `.github/workflows/daily_model_run.yml`
+You should see `FRED_API_KEY` listed under Repository secrets. The workflow will use it; you never commit it.
+
+---
+
+## Step 3: Setup GitHub Actions Workflow
+
+### 3.1 Enable GitHub Actions
+The workflow file is already at `.github/workflows/daily_model_run.yml`.
 
 **The workflow will:**
-- Run daily at 6 AM UTC (configurable in the cron)
+- Run on schedule (and/or via external cron — see Step 4)
 - Install Python dependencies
 - Run `run_model_github_actions.py`
 - Save results to `public/cached_results.json`
 - Commit and push the updated JSON file
 
-### 2.3 Test the workflow manually
-1. Go to **Actions** tab in your GitHub repo
-2. Click on **"Daily Model Run"** workflow
-3. Click **"Run workflow"** → **"Run workflow"** (manual trigger)
-4. Wait ~5-6 minutes for it to complete
-5. Check that `public/cached_results.json` was updated
+### 3.2 Test the workflow manually
+1. Go to the **Actions** tab in your GitHub repo
+2. Click **"Daily Model Run"**
+3. Click **"Run workflow"** → **"Run workflow"**
+4. Wait ~5–6 minutes, then confirm `public/cached_results.json` was updated
 
-### 2.4 Verify the workflow
-- Check the **Actions** tab to see workflow runs
-- The first run will create `public/cached_results.json`
-- Subsequent runs will update it daily
+### 3.3 Verify
+- **Actions** tab shows workflow runs
+- The first successful run creates/updates `public/cached_results.json`
 
 ---
 
-## Step 3: Cron Setup (Already Configured)
+## Step 4: Cron — GitHub schedule and/or external cron site
 
-The cron is **already set up** in the GitHub Actions workflow file:
+You can use **only** the built-in schedule, **only** an external cron site, or **both**.
+
+### Option A: Built-in schedule (in the workflow)
+
+The workflow already has a schedule in `.github/workflows/daily_model_run.yml`:
 
 ```yaml
 on:
   schedule:
     - cron: '0 6 * * *'  # Daily at 6 AM UTC
+  workflow_dispatch:     # allows manual + external cron trigger
 ```
 
-**To change the schedule:**
-- Edit `.github/workflows/daily_model_run.yml`
-- Modify the cron expression (use [crontab.guru](https://crontab.guru) for help)
-- Examples:
-  - `'0 0 * * *'` = Midnight UTC daily
-  - `'0 12 * * *'` = Noon UTC daily
-  - `'0 6 * * 1'` = 6 AM UTC every Monday
+**To change the time:** edit the `cron` line (e.g. [crontab.guru](https://crontab.guru)):
+- `'0 0 * * *'` = midnight UTC daily
+- `'0 12 * * *'` = noon UTC daily
+- `'0 6 * * 1'` = 6 AM UTC every Monday
 
-**The workflow automatically:**
-1. Runs the model (takes ~5-6 minutes)
-2. Saves results to `public/cached_results.json`
-3. Commits and pushes the file
-4. Vercel auto-deploys when it detects the push
+Note: GitHub may run scheduled workflows a few minutes late; for exact timing, use Option B.
+
+### Option B: External cron site (e.g. cron-job.org)
+
+Use a free cron website to call GitHub’s API at a fixed time and trigger the workflow. That way the run happens when the cron site fires, not when GitHub’s scheduler runs.
+
+**1. Create a Personal Access Token (PAT) on GitHub**
+1. GitHub → **Settings** (your profile, not the repo) → **Developer settings** → **Personal access tokens** → **Tokens (classic)** or **Fine-grained tokens**
+2. **New token**
+   - **Classic:** enable scope **`repo`**
+   - **Fine-grained:** select this repo, permissions **Contents: Read and write** and **Actions: Read and write** (or **Workflows: Read and write**)
+3. Generate and **copy the token** (you won’t see it again)
+
+**2. Create the cron job on cron-job.org**
+1. Go to [cron-job.org](https://cron-job.org) and sign up / log in
+2. **Create cronjob**
+3. **URL:**  
+   `https://api.github.com/repos/OWNER/REPO/actions/workflows/daily_model_run.yml/dispatches`  
+   Replace `OWNER` and `REPO` with your GitHub username and repo name (e.g. `skp1008` and `Portfolio-Analytics`).
+4. **Request method:** `POST`
+5. **Request headers:** add these two:
+   - `Authorization`: `token YOUR_GITHUB_PAT`
+   - `Accept`: `application/vnd.github.v3+json`
+6. **Request body:**  
+   - Choose “Raw” or “JSON” and enter:  
+     `{"ref":"main"}`  
+   (Use `master` if your default branch is `master`.)
+7. **Schedule:** set the time (e.g. daily at 6:00 UTC)
+8. Save the cron job
+
+**3. Test**
+- Use “Run now” on the cron job, then check the repo **Actions** tab for a new “Daily Model Run” run.
+
+**Other cron sites (e.g. EasyCron, cron-job.com):** use the same URL, method, headers, and body as above.
 
 ---
 

@@ -12,29 +12,44 @@ const periods = {
 };
 
 // Load data from JSON file
+function isHtmlResponse(text) {
+    const t = text.trim().replace(/^\uFEFF/, '');
+    return t.startsWith('<') || /<\s*!?\s*DOCTYPE/i.test(t) || /<\s*html[\s>]/i.test(t);
+}
+
 async function loadData() {
     try {
         const response = await fetch('/cached_results.json');
         const text = await response.text();
-        
-        // If we got HTML (e.g. 404 or SPA fallback), the file isn't available
-        if (text.trim().startsWith('<')) {
+
+        // If we got HTML (e.g. 404 or SPA fallback), show friendly message
+        if (isHtmlResponse(text)) {
             throw new Error('DATA_NOT_AVAILABLE');
         }
-        
+
         if (!response.ok) throw new Error('Failed to load data');
-        
-        appData = JSON.parse(text);
-        
+
+        let appDataParsed;
+        try {
+            appDataParsed = JSON.parse(text);
+        } catch (parseErr) {
+            // Often "Unexpected token '<'" when server returned HTML
+            if (/Unexpected token|is not valid JSON/i.test(parseErr.message)) {
+                throw new Error('DATA_NOT_AVAILABLE');
+            }
+            throw parseErr;
+        }
+        appData = appDataParsed;
+
         // Check for placeholder or empty data
         if (!appData.predictions || appData.predictions.length === 0) {
             throw new Error('DATA_NOT_AVAILABLE');
         }
-        
+
         // Initialize with first ticker
         const tickers = [...new Set(appData.predictions.map(p => p.Ticker))].sort();
         selectedTicker = tickers[0];
-        
+
         renderAll();
     } catch (error) {
         document.getElementById('loading').style.display = 'none';
