@@ -13,7 +13,12 @@ from sklearn.metrics import accuracy_score, log_loss, f1_score
 from datetime import datetime, timedelta
 import json
 import os
-from config import FRED_API_KEY
+
+# FRED API key: from config (local) or env (e.g. GitHub Actions)
+try:
+    from config import FRED_API_KEY
+except ImportError:
+    FRED_API_KEY = os.environ.get("FRED_API_KEY", "")
 
 
 def fetch_stock_data(ticker_list, start_date="2021-01-01"):

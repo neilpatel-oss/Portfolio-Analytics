@@ -25,6 +25,10 @@ A single-stock analysis system that uses gradient boosting models to predict sto
 ### Run Locally (Streamlit version)
 
 ```bash
+# Copy config and add your FRED API key
+cp config.example.py config.py
+# Edit config.py and set FRED_API_KEY
+
 # Install dependencies
 pip install -r requirements.txt
 
@@ -38,7 +42,7 @@ python launcher.py
 python run_model_github_actions.py
 ```
 
-This will save results to `public/cached_results.json`.
+Saves results to `public/cached_results.json`. For local runs, `config.py` with `FRED_API_KEY` is required (or set env var `FRED_API_KEY`).
 
 ## Deployment
 
@@ -65,7 +69,8 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment instructions.
 ├── run_model_github_actions.py # Script for GitHub Actions
 ├── frontend.py                 # Streamlit frontend (local dev)
 ├── launcher.py                 # Local launcher
-├── config.py                   # Configuration (API keys)
+├── config.example.py           # Template for config (copy to config.py)
+├── config.py                   # Local only, gitignored (FRED API key)
 ├── requirements.txt            # Python dependencies
 ├── vercel.json                 # Vercel configuration
 └── DEPLOYMENT.md              # Deployment guide

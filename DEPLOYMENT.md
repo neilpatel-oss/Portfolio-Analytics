@@ -44,11 +44,13 @@ After deployment, go to **Project Settings** → **General**:
 ## Step 2: Setup GitHub Actions Workflow
 
 ### 2.1 Add FRED API Key to GitHub Secrets
+The model needs a FRED API key (get one at [fred.stlouisfed.org](https://fred.stlouisfed.org/docs/api/api_key.html)). `config.py` is not in the repo, so GitHub Actions uses a secret:
+
 1. Go to your GitHub repo: `https://github.com/skp1008/Portfolio-Analytics`
 2. Click **Settings** → **Secrets and variables** → **Actions**
 3. Click **"New repository secret"**
 4. Name: `FRED_API_KEY`
-5. Value: Your FRED API key (from `config.py`)
+5. Value: Your FRED API key
 6. Click **"Add secret"**
 
 ### 2.2 Enable GitHub Actions
@@ -114,7 +116,7 @@ Portfolio-Analytics/
 │   └── cached_results.json       # Model results (auto-generated)
 ├── model.py                       # Model code
 ├── run_model_github_actions.py    # Script for GitHub Actions
-├── config.py                      # API keys (not committed)
+├── config.py                      # Local only (gitignored); use GitHub Secret for Actions
 ├── requirements.txt               # Python dependencies
 ├── vercel.json                    # Vercel configuration
 ├── package.json                   # For Vercel build

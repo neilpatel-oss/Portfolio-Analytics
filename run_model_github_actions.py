@@ -12,7 +12,15 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from model import run_model
-from config import FRED_API_KEY
+
+# GitHub Actions passes FRED_API_KEY via env; local can use config
+FRED_API_KEY = os.environ.get("FRED_API_KEY", "")
+if not FRED_API_KEY:
+    try:
+        from config import FRED_API_KEY as _k
+        FRED_API_KEY = _k
+    except ImportError:
+        pass
 
 
 def main():

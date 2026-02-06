@@ -15,8 +15,21 @@ const periods = {
 async function loadData() {
     try {
         const response = await fetch('/cached_results.json');
+        const text = await response.text();
+        
+        // If we got HTML (e.g. 404 or SPA fallback), the file isn't available
+        if (text.trim().startsWith('<')) {
+            throw new Error('DATA_NOT_AVAILABLE');
+        }
+        
         if (!response.ok) throw new Error('Failed to load data');
-        appData = await response.json();
+        
+        appData = JSON.parse(text);
+        
+        // Check for placeholder or empty data
+        if (!appData.predictions || appData.predictions.length === 0) {
+            throw new Error('DATA_NOT_AVAILABLE');
+        }
         
         // Initialize with first ticker
         const tickers = [...new Set(appData.predictions.map(p => p.Ticker))].sort();
@@ -26,7 +39,15 @@ async function loadData() {
     } catch (error) {
         document.getElementById('loading').style.display = 'none';
         document.getElementById('error').style.display = 'block';
-        document.getElementById('error').textContent = `Error loading data: ${error.message}`;
+        if (error.message === 'DATA_NOT_AVAILABLE') {
+            document.getElementById('error').innerHTML = [
+                'No model data available yet.',
+                'Run the <strong>Daily Model Run</strong> workflow in the GitHub Actions tab of this repo to generate results.',
+                'After it completes (~5–6 min), refresh this page.'
+            ].join(' ');
+        } else {
+            document.getElementById('error').textContent = `Error loading data: ${error.message}`;
+        }
     }
 }
 
