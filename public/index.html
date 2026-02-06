@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Analysis Platform</title>
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #0a0e27;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .main-title {
+            text-align: center;
+            margin: 3rem 0 1rem 0;
+        }
+
+        .main-title h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: #f1f5f9;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.5rem;
+        }
+
+        .main-title .model-run-date {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-top: 0.5rem;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin: 3rem 0 2rem 0;
+        }
+
+        .stock-selection {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .stock-icon-circle {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.75rem;
+            color: white;
+            margin: 0 auto 0.75rem auto;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .stock-icon-circle.selected {
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
+        }
+
+        .stock-button {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            color: #94a3b8;
+            font-weight: 500;
+            border-radius: 8px;
+            padding: 0.75rem 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+        }
+
+        .stock-button:hover {
+            background-color: #334155;
+            border-color: #475569;
+            color: #f1f5f9;
+        }
+
+        .stock-button.selected {
+            background-color: #1e40af;
+            border-color: #3b82f6;
+            color: #f1f5f9;
+        }
+
+        .stock-summary-bar {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 1.5rem 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        .summary-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .summary-left h3 {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-left h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            letter-spacing: -0.02em;
+        }
+
+        .summary-right {
+            text-align: right;
+        }
+
+        .summary-right .price {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-right .change {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .change.positive {
+            color: #10b981;
+        }
+
+        .change.negative {
+            color: #ef4444;
+        }
+
+        .period-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin: 1rem 0 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .period-btn {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            color: #94a3b8;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .period-btn:hover {
+            background-color: #334155;
+            color: #f1f5f9;
+        }
+
+        .period-btn.selected {
+            background-color: #1e40af;
+            border-color: #3b82f6;
+            color: #f1f5f9;
+        }
+
+        .chart-container {
+            background: transparent;
+            margin: 2rem 0;
+            padding: 1rem 0;
+        }
+
+        .prediction-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 2.5rem;
+            margin: 2rem 0;
+        }
+
+        .signal-badge {
+            padding: 2.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            border-left: 5px solid;
+        }
+
+        .signal-badge.SHORT {
+            background: rgba(239, 68, 68, 0.08);
+            border-left-color: #dc2626;
+        }
+
+        .signal-badge.BUY {
+            background: rgba(16, 185, 129, 0.08);
+            border-left-color: #10b981;
+        }
+
+        .signal-badge.HOLD {
+            background: rgba(100, 116, 139, 0.08);
+            border-left-color: #64748b;
+        }
+
+        .signal-text {
+            font-size: 3.5rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1;
+            margin-bottom: 0.75rem;
+        }
+
+        .signal-badge.SHORT .signal-text {
+            color: #dc2626;
+        }
+
+        .signal-badge.BUY .signal-text {
+            color: #10b981;
+        }
+
+        .signal-badge.HOLD .signal-text {
+            color: #64748b;
+        }
+
+        .signal-subtitle {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #cbd5e1;
+        }
+
+        .prediction-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .probability-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.625rem;
+        }
+
+        .probability-row {
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 6px;
+            padding: 0.875rem 1rem;
+        }
+
+        .probability-label {
+            font-size: 0.6875rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.375rem;
+            font-weight: 500;
+        }
+
+        .probability-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #f1f5f9;
+            margin-bottom: 0.5rem;
+        }
+
+        .probability-bar {
+            height: 3px;
+            border-radius: 2px;
+            background: rgba(148, 163, 184, 0.08);
+            overflow: hidden;
+        }
+
+        .probability-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.8s ease;
+        }
+
+        .probability-bar-fill.rise {
+            background: #10b981;
+        }
+
+        .probability-bar-fill.neutral {
+            background: #64748b;
+        }
+
+        .probability-bar-fill.fall {
+            background: #dc2626;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .metric-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .metric-card h3 {
+            font-size: 1rem;
+            color: #94a3b8;
+            margin-bottom: 1rem;
+        }
+
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #334155;
+        }
+
+        .metric-item:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .metric-value {
+            color: #f1f5f9;
+            font-weight: 600;
+        }
+
+        .economic-metrics-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .economic-metric-card {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        .economic-metric-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+        }
+
+        .economic-metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            letter-spacing: -0.02em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #94a3b8;
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #dc2626;
+            border-radius: 8px;
+            padding: 1.5rem;
+            color: #ef4444;
+            margin: 2rem 0;
+        }
+
+        .pct-change {
+            text-align: right;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+
+        .pct-change.positive {
+            color: #10b981;
+        }
+
+        .pct-change.negative {
+            color: #ef4444;
+        }
+
+        @media (max-width: 768px) {
+            .main-title h1 {
+                font-size: 2rem;
+            }
+
+            .prediction-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .economic-metrics-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-title">
+            <h1>Stock Analysis Platform</h1>
+            <div class="model-run-date" id="modelRunDate"></div>
+        </div>
+
+        <div id="loading" class="loading">Loading data...</div>
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="content" style="display: none;">
+            <div class="section-title">Select Stock</div>
+            <div class="stock-selection" id="stockSelection"></div>
+
+            <div id="stockSummary" class="stock-summary-bar"></div>
+
+            <div class="section-title">Price Movement</div>
+            <div class="period-buttons" id="periodButtons"></div>
+            <div class="chart-container">
+                <div id="priceChart"></div>
+                <div id="pctChange" class="pct-change"></div>
+            </div>
+
+            <div class="section-title">Prediction Analysis</div>
+            <div class="prediction-card">
+                <div id="signalBadge"></div>
+                <div class="prediction-layout">
+                    <div id="pieChart"></div>
+                    <div class="probability-list" id="probabilityList"></div>
+                </div>
+            </div>
+
+            <div class="section-title">Market Performance</div>
+            <div class="chart-container">
+                <div id="marketChart"></div>
+            </div>
+
+            <div class="section-title">Backtest Statistics & Stock Information</div>
+            <div class="metrics-grid">
+                <div class="metric-card" id="backtestMetrics"></div>
+                <div class="metric-card" id="stockMetrics"></div>
+            </div>
+
+            <div class="section-title">Economic Conditions</div>
+            <div class="economic-metrics-container" id="economicMetrics"></div>
+
+            <div class="section-title">Model Variables</div>
+            <div class="metric-card" style="margin-top: 2rem;">
+                <p style="color: #94a3b8; line-height: 1.8;">
+                    The model uses the following key variables:<br>
+                    <strong>1. Stock's Own History (AR1-like):</strong> Historical price movements, returns (1, 5, 15, 30 day), momentum, volatility, RSI, drawdown<br>
+                    <strong>2. Overall Market Conditions:</strong> S&P 500 (^GSPC) performance and volatility<br>
+                    <strong>3. Industry Conditions:</strong> Via ETFs (XLK, XLF, etc.) and sector performance<br>
+                    <strong>4. Economic Variables:</strong> Interest rates, inflation, unemployment rate
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

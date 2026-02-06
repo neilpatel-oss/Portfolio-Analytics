@@ -71,6 +71,7 @@ figures/
 *.jpg
 *.pdf
 
-# Cached results
+# Cached results (keep public/cached_results.json for deployment)
 cached_results.json
 *.json.cache
+!public/cached_results.json

@@ -1,11 +1,11 @@
-# Stock Analysis Dashboard
+# Stock Analysis Platform
 
-A single-stock analysis system that uses gradient boosting models to predict stock price movements and displays results through a Streamlit dashboard.
+A single-stock analysis system that uses gradient boosting models to predict stock price movements and displays results through a web dashboard.
 
 ## Features
 
 - **Stock Prediction Model**: Gradient boosting model that predicts whether a stock will Rise, Fall, or remain Neutral
-- **Interactive Dashboard**: Streamlit-based dashboard with:
+- **Interactive Dashboard**: Web-based dashboard with:
   - Movement history charts (1 day, 15 days, 1 month, 5 years, max)
   - Prediction pie chart (Rise/Fall/Neutral probabilities)
   - Action recommendation (BUY/HOLD/SHORT)
@@ -14,84 +14,61 @@ A single-stock analysis system that uses gradient boosting models to predict sto
   - Market performance (S&P 500) chart
   - Backtest statistics and stock information
 
-## Quick Start
+## Architecture
 
-### 1. Install Dependencies
+- **Frontend**: Static HTML/JS (served by Vercel)
+- **Model**: Python/XGBoost (runs daily via GitHub Actions)
+- **Data**: JSON file (`public/cached_results.json`) updated daily
+
+## Local Development
+
+### Run Locally (Streamlit version)
 
 ```bash
+# Install dependencies
 pip install -r requirements.txt
-```
 
-### 2. Configure API Keys
-
-Edit `config.py` and add your FRED API key:
-```python
-FRED_API_KEY = "your-fred-api-key-here"
-```
-
-Get a free FRED API key from: https://fred.stlouisfed.org/docs/api/api_key.html
-
-### 3. Run the Application
-
-```bash
+# Run launcher (uses cache if recent, otherwise runs model)
 python launcher.py
 ```
 
-The launcher will:
-- Check and install missing dependencies
-- Run the prediction model (or use cached results if recent)
-- Launch the Streamlit dashboard in your browser
+### Run Model Only
 
-## How It Works
+```bash
+python run_model_github_actions.py
+```
 
-### Model Pipeline
+This will save results to `public/cached_results.json`.
 
-1. **Data Fetching**: 
-   - Fetches stock data using yfinance API
-   - Fetches economic variables using FRED API (Interest Rate, Inflation, Unemployment)
+## Deployment
 
-2. **Feature Engineering**:
-   - **Stock's Own History**: Returns (1, 5, 15, 30 day), momentum, volatility, RSI, drawdown
-   - **Market Conditions**: S&P 500 (^GSPC) performance and volatility
-   - **Volatility Index**: VIX levels and changes
-   - **Economic Variables**: Interest rates, inflation (YoY), unemployment
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment instructions.
 
-3. **Model Training**: 
-   - XGBoost classifier with 3 classes (Down, Flat, Up)
-   - Uses rolling window backtesting for evaluation
-
-4. **Prediction**:
-   - Generates probabilities for Rise/Fall/Neutral
-   - Provides action recommendation (BUY/HOLD/SHORT) based on confidence threshold
-
-### Caching
-
-- Model results are cached to `cached_results.json`
-- Cache is valid for 24 hours (to be updated to daily automated runs later)
-- This avoids re-running the 5-6 minute model execution on every launch
-
-## Configuration
-
-Edit `launcher.py` to modify:
-- **Target Tickers**: Stocks to analyze (default: NVDA, ORCL, THAR, SOFI, RR, RGTI)
-- **Market Tickers**: Market indicators (default: ^GSPC, ^VIX)
-- **FRED Series**: Economic variables to fetch
-- **Backtest Start Date**: Date to start backtesting
-- **Horizon**: Prediction horizon in days (default: 15)
-- **Confidence Threshold**: Minimum probability for action recommendation (default: 0.6)
+**Quick Summary:**
+1. Push code to GitHub (`skp1008/Portfolio-Analytics`)
+2. Connect Vercel to the repo
+3. Add `FRED_API_KEY` to GitHub Secrets
+4. GitHub Actions runs daily and updates results
+5. Vercel serves the static frontend
 
 ## Project Structure
 
 ```
-Quant-Project/
-├── model.py              # Combined model (data fetching, feature engineering, prediction)
-├── frontend.py           # Streamlit dashboard
-├── launcher.py           # Main launcher with dependency checking and caching
-├── config.py             # Configuration (API keys)
-├── requirements.txt      # Python dependencies
-├── stock_prediction.ipynb # Original Jupyter notebook
-├── cached_results.json   # Cached model results (auto-generated)
-└── README.md
+├── public/
+│   ├── index.html              # Web frontend
+│   ├── app.js                  # Frontend JavaScript
+│   └── cached_results.json     # Model results (auto-generated)
+├── .github/
+│   └── workflows/
+│       └── daily_model_run.yml # GitHub Actions workflow
+├── model.py                    # Model code
+├── run_model_github_actions.py # Script for GitHub Actions
+├── frontend.py                 # Streamlit frontend (local dev)
+├── launcher.py                 # Local launcher
+├── config.py                   # Configuration (API keys)
+├── requirements.txt            # Python dependencies
+├── vercel.json                 # Vercel configuration
+└── DEPLOYMENT.md              # Deployment guide
 ```
 
 ## Default Stocks
@@ -99,19 +76,18 @@ Quant-Project/
 The system analyzes these stocks by default:
 - NVDA, ORCL, THAR, SOFI, RR, RGTI
 
-Select any stock from the dropdown in the dashboard to view its analysis.
-
 ## Model Variables
 
 The model uses four main categories of variables:
 
 1. **Stock's Own History (AR1-like)**: Historical price movements, returns, momentum, volatility
-2. **Overall Market Conditions**: S&P 500 performance and volatility
+2. **Overall Market Conditions**: S&P 500 (^GSPC) performance and volatility
 3. **Industry Conditions**: Sector ETF performance (via market indicators)
 4. **Economic Variables**: Interest rates, inflation (YoY), unemployment rate
 
 ## Notes
 
-- First run will take 5-6 minutes to fetch data and train models
-- Subsequent runs use cached results (valid for 24 hours)
-- For production, model will run once daily automatically and use cached results for user requests
+- Model runs take 5-6 minutes
+- Results are cached and updated daily via GitHub Actions
+- Frontend loads instantly by reading cached JSON
+- For production, model runs once daily automatically
