@@ -40,14 +40,26 @@ jobs:
         run: |
           python run_model_github_actions.py
       
+      - name: Verify results were written
+        run: |
+          PREDS=$(python -c "import json; d=json.load(open('public/cached_results.json')); print(len(d.get('predictions', [])))")
+          echo "Predictions count: $PREDS"
+          if [ "$PREDS" = "0" ]; then
+            echo "::error::No predictions in cached_results.json - frontend will show 'No model data'"
+            exit 1
+          fi
+      
       - name: Commit and push results
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add public/cached_results.json
           if git diff --staged --quiet; then
-            echo "No changes to commit"
+            echo "No changes to commit (file unchanged)"
           else
-            git commit -m "Update model results [skip ci]"
-            git push
+            # Use a message without [skip ci] so Vercel (and other CI) still deploy
+            git commit -m "chore: update cached model results"
+            git push origin HEAD
           fi
+          echo "Latest public/cached_results.json (first 500 chars):"
+          head -c 500 public/cached_results.json || true
