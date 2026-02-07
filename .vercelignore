@@ -14,8 +14,5 @@ ENV/
 dist/
 build/
 
-# Ignore root cached_results.json (deployment uses public/cached_results.json)
-cached_results.json
-
-# Keep public/ files - they're needed for deployment
-!public/
+# Ignore only root cached_results.json; keep public/cached_results.json for the site
+/cached_results.json
