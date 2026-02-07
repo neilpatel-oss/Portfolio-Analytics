@@ -20,38 +20,51 @@ function isHtmlResponse(text) {
 async function loadData() {
     try {
         const response = await fetch('/cached_results.json');
+        
+        // Check HTTP status first
+        if (!response.ok) {
+            console.error('Fetch failed:', response.status, response.statusText);
+            throw new Error('DATA_NOT_AVAILABLE');
+        }
+        
         const text = await response.text();
+        console.log('Response received, length:', text.length, 'starts with:', text.substring(0, 50));
 
         // If we got HTML (e.g. 404 or SPA fallback), show friendly message
         if (isHtmlResponse(text)) {
+            console.error('Received HTML instead of JSON');
             throw new Error('DATA_NOT_AVAILABLE');
         }
-
-        if (!response.ok) throw new Error('Failed to load data');
 
         let appDataParsed;
         try {
             appDataParsed = JSON.parse(text);
         } catch (parseErr) {
+            console.error('JSON parse error:', parseErr.message);
             // Often "Unexpected token '<'" when server returned HTML
             if (/Unexpected token|is not valid JSON/i.test(parseErr.message)) {
                 throw new Error('DATA_NOT_AVAILABLE');
             }
             throw parseErr;
         }
+        
+        console.log('JSON parsed successfully. Predictions:', appDataParsed.predictions?.length || 0);
         appData = appDataParsed;
 
         // Check for placeholder or empty data
         if (!appData.predictions || appData.predictions.length === 0) {
+            console.error('No predictions in data:', appData);
             throw new Error('DATA_NOT_AVAILABLE');
         }
 
         // Initialize with first ticker
         const tickers = [...new Set(appData.predictions.map(p => p.Ticker))].sort();
         selectedTicker = tickers[0];
+        console.log('Data loaded successfully. Tickers:', tickers);
 
         renderAll();
     } catch (error) {
+        console.error('loadData error:', error);
         document.getElementById('loading').style.display = 'none';
         document.getElementById('error').style.display = 'block';
         if (error.message === 'DATA_NOT_AVAILABLE') {

@@ -1,98 +1,97 @@
 # Stock Analysis Platform
 
-A single-stock analysis system that uses gradient boosting models to predict stock price movements and displays results through a web dashboard.
-
-## Features
-
-- **Stock Prediction Model**: Gradient boosting model that predicts whether a stock will Rise, Fall, or remain Neutral
-- **Interactive Dashboard**: Web-based dashboard with:
-  - Movement history charts (1 day, 15 days, 1 month, 5 years, max)
-  - Prediction pie chart (Rise/Fall/Neutral probabilities)
-  - Action recommendation (BUY/HOLD/SHORT)
-  - Model variables explanation
-  - Economic conditions display
-  - Market performance (S&P 500) chart
-  - Backtest statistics and stock information
+A stock analysis system that uses gradient boosting models to predict stock price movements and displays results through a static web dashboard.
 
 ## Architecture
 
-- **Frontend**: Static HTML/JS (served by Vercel)
-- **Model**: Python/XGBoost (runs daily via GitHub Actions)
-- **Data**: JSON file (`public/cached_results.json`) updated daily
+**Two separate systems:**
 
-## Local Development
+1. **Model Execution (GitHub Actions)**
+   - Runs daily at midnight (cron) or manually via workflow_dispatch
+   - Executes `run_model_github_actions.py` which calls `model.py`
+   - Saves results to `public/cached_results.json`
+   - Commits and pushes the updated JSON file
 
-### Run Locally (Streamlit version)
+2. **Frontend (Vercel)**
+   - Static HTML/JS site served from `public/` directory
+   - **Only reads** `public/cached_results.json` - never runs the model
+   - Displays predictions, charts, and metrics
+   - Updates automatically when GitHub Actions commits new data
 
-```bash
-# Copy config and add your FRED API key
-cp config.example.py config.py
-# Edit config.py and set FRED_API_KEY
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run launcher (uses cache if recent, otherwise runs model)
-python launcher.py
-```
-
-### Run Model Only
-
-```bash
-python run_model_github_actions.py
-```
-
-Saves results to `public/cached_results.json`. For local runs, `config.py` with `FRED_API_KEY` is required (or set env var `FRED_API_KEY`).
-
-## Deployment
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment instructions.
-
-**Quick Summary:**
-1. Push code to GitHub (`skp1008/Portfolio-Analytics`)
-2. Connect Vercel to the repo
-3. Add `FRED_API_KEY` to GitHub Secrets
-4. GitHub Actions runs daily and updates results
-5. Vercel serves the static frontend
+**No server needed** - everything is static or runs on GitHub Actions.
 
 ## Project Structure
 
 ```
-├── public/
-│   ├── index.html              # Web frontend
-│   ├── app.js                  # Frontend JavaScript
-│   └── cached_results.json     # Model results (auto-generated)
+├── public/                          # Frontend (deployed to Vercel)
+│   ├── index.html                  # Web frontend
+│   ├── app.js                      # Frontend JavaScript (reads JSON only)
+│   └── cached_results.json         # Model results (auto-updated by GitHub Actions)
 ├── .github/
 │   └── workflows/
-│       └── daily_model_run.yml # GitHub Actions workflow
-├── model.py                    # Model code
-├── run_model_github_actions.py # Script for GitHub Actions
-├── frontend.py                 # Streamlit frontend (local dev)
-├── launcher.py                 # Local launcher
-├── config.example.py           # Template for config (copy to config.py)
-├── config.py                   # Local only, gitignored (FRED API key)
-├── requirements.txt            # Python dependencies
-├── vercel.json                 # Vercel configuration
-└── DEPLOYMENT.md              # Deployment guide
+│       └── daily_model_run.yml     # GitHub Actions workflow (runs model daily)
+├── model.py                        # Model code (used by GitHub Actions)
+├── run_model_github_actions.py     # Script for GitHub Actions (runs model, saves JSON)
+├── config.example.py               # Template for config (copy to config.py locally)
+├── requirements.txt                # Python dependencies (for GitHub Actions)
+├── vercel.json                     # Vercel configuration
+├── package.json                    # Minimal package.json for Vercel
+└── DEPLOYMENT.md                   # Complete deployment guide
 ```
+
+## Local Development
+
+### Run Model Locally
+
+```bash
+# Copy config template
+cp config.example.py config.py
+# Edit config.py and add your FRED_API_KEY
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run model (saves to public/cached_results.json)
+python run_model_github_actions.py
+```
+
+### View Frontend Locally
+
+```bash
+# Serve the public/ directory with any static server
+cd public
+python -m http.server 8000
+# Open http://localhost:8000
+```
+
+## Deployment
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete instructions.
+
+**Quick Summary:**
+1. Push code to GitHub
+2. Connect Vercel to the repo (serves `public/` directory)
+3. Add `FRED_API_KEY` to GitHub Secrets
+4. GitHub Actions runs daily and updates `public/cached_results.json`
+5. Vercel auto-deploys when the JSON file is updated
 
 ## Default Stocks
 
-The system analyzes these stocks by default:
+The system analyzes these stocks:
 - NVDA, ORCL, THAR, SOFI, RR, RGTI
 
 ## Model Variables
 
-The model uses four main categories of variables:
-
-1. **Stock's Own History (AR1-like)**: Historical price movements, returns, momentum, volatility
-2. **Overall Market Conditions**: S&P 500 (^GSPC) performance and volatility
-3. **Industry Conditions**: Sector ETF performance (via market indicators)
+The model uses four main categories:
+1. **Stock History**: Historical price movements, returns, momentum, volatility
+2. **Market Conditions**: S&P 500 (^GSPC) performance and volatility
+3. **Industry Conditions**: Sector ETF performance
 4. **Economic Variables**: Interest rates, inflation (YoY), unemployment rate
 
 ## Notes
 
 - Model runs take 5-6 minutes
-- Results are cached and updated daily via GitHub Actions
-- Frontend loads instantly by reading cached JSON
-- For production, model runs once daily automatically
+- Results are cached in `public/cached_results.json`
+- Frontend loads instantly by reading the cached JSON file
+- Model runs automatically daily via GitHub Actions cron
+- Frontend never executes Python or runs the model - it only displays the JSON data
