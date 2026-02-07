@@ -1,0 +1,21 @@
+# Ignore Python files - this is a static site, no Python needed on Vercel
+requirements.txt
+*.py
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Ignore root cached_results.json (deployment uses public/cached_results.json)
+cached_results.json
+
+# Keep public/ files - they're needed for deployment
+!public/

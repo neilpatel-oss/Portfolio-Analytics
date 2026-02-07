@@ -1,6 +1,7 @@
 {
   "version": 2,
   "buildCommand": "echo 'No build needed'",
+  "installCommand": "echo 'Skipping install - static site only'",
   "outputDirectory": "public",
   "rewrites": [
     { "source": "/cached_results.json", "destination": "/cached_results.json" },
