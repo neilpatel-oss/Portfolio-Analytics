@@ -1,4 +1,4 @@
 
 # Stock Analysis Platform
 
-🚀 **https://www.krishnapaudel.ca/quant-proj**
+🚀 **https://neil-portfolio-analytics.vercel.app/**
