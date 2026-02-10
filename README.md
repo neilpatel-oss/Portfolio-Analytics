@@ -1,4 +1,4 @@
 
 # Stock Analysis Platform
 
-🚀 **https://neil-portfolio-analytics.vercel.app/**
+🚀 **https://vercel.com/neilpatel-oss-projects/portfolio-analytics/**
